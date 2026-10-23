@@ -3,6 +3,14 @@ main = "src/index.js"
 compatibility_date = "2026-10-17"
 compatibility_flags = ["nodejs_compat"]
 
+[assets]
+directory = "../../client/dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
+[vars]
+CLIENT_ORIGIN = "https://watch-party-api.watch-party-cloudflare.workers.dev"
+
 [[durable_objects.bindings]]
 name = "WATCH_ROOMS"
 class_name = "WatchRoom"

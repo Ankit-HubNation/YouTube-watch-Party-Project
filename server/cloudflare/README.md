@@ -23,11 +23,10 @@ npm run build --prefix client
 
 ## Deploy the API
 
-1. Sign in to Cloudflare and connect the GitHub repository, or authenticate Wrangler with `npx wrangler login`.
-2. From `server/cloudflare`, run `npm install` and `npm run deploy`.
-3. In the Cloudflare dashboard, set the Worker variable `CLIENT_ORIGIN` to the exact published Pages origin, for example `https://watch-party-web.pages.dev`. Do not use `*` for a production deployment.
-4. Redeploy the Worker after setting the origin. Check `https://<worker-name>.<account-subdomain>.workers.dev/health`.
-5. On Cloudflare Pages, connect this repository with root directory `client`, build command `npm install && npm run build`, and output directory `dist`. Set the build environment variable `VITE_SERVER_URL` to the Worker URL, then deploy/rebuild.
+1. Sign in to Cloudflare and authenticate Wrangler with `npx wrangler login`.
+2. From the repository root, run `npm install --prefix server/cloudflare` and `npm run deploy:cloudflare`. The script builds the Vite client and uploads `client/dist` as Worker static assets.
+3. Open `server/cloudflare/wrangler.toml` and set `CLIENT_ORIGIN` to the final `workers.dev` URL if you rename the Worker or change its subdomain; then deploy again. Do not use `*` in production.
+4. Check `https://<worker-name>.<account-subdomain>.workers.dev/health` and open the root URL to verify the static frontend.
 
 Cloudflare Workers Free currently includes daily limits for Worker requests and SQLite-backed Durable Objects. Durable Objects support WebSockets; this implementation uses the hibernation API and a brief reconnect grace period. Check current account quotas before inviting larger groups. A connected Durable Object can incur duration usage while active, and free-tier overages are rejected rather than silently billed.
 

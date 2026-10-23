@@ -10,7 +10,7 @@ type Room = { roomId: string; name: string; videoId: string; playState: 'playing
 type RecentRoom = { roomId: string; name: string; visitedAt: number };
 type RecentVideo = { videoId: string; watchedAt: number };
 type Sync = { videoId: string; playState: 'playing' | 'paused'; currentTime: number; action?: string; actorId?: string; updatedAt?: number };
-const SERVER = import.meta.env.VITE_SERVER_URL || 'http://localhost:8787';
+const SERVER = import.meta.env.VITE_SERVER_URL || (import.meta.env.PROD ? location.origin : 'http://localhost:8787');
 
 function readLocalHistory<T extends { [key: string]: unknown }>(key: string, isValid: (item: T) => boolean): T[] {
   try {
