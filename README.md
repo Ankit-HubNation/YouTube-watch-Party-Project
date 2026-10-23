@@ -1,6 +1,6 @@
 # WatchTogether: YouTube Watch Party
 
-A React, TypeScript, Express, and Socket.IO application for watching YouTube videos together in synchronized rooms.
+A React and TypeScript watch-party client with a Cloudflare Workers/Durable Objects backend for synchronized YouTube rooms. The original Express/Socket.IO backend remains available as a legacy fallback.
 
 ## Features
 
@@ -23,11 +23,11 @@ From the project root:
 
 ```bash
 npm install
-npm install --prefix server
+npm install --prefix server/cloudflare
 npm install --prefix client
 ```
 
-Copy `server/.env.example` to `server/.env`, then start both services:
+Start the Worker and frontend:
 
 ```bash
 npm run dev
@@ -36,19 +36,20 @@ npm run dev
 On Windows PowerShell:
 
 ```powershell
-Copy-Item server/.env.example server/.env
 npm run dev
 ```
 
 Frontend: http://localhost:5173  
-Backend health: http://localhost:4000/health
+Worker health: http://localhost:8787/health
+
+To run the legacy Express backend instead, configure `server/.env` and run `npm run dev:legacy`.
 
 ## Tests and build
 
-Run the backend Socket.IO integration tests and frontend TypeScript/production build:
+Run the Durable Object integration tests and frontend TypeScript/production build:
 
 ```bash
-npm test --prefix server
+npm test --prefix server/cloudflare
 npm run build --prefix client
 ```
 
@@ -56,10 +57,7 @@ There is no separate lint script configured.
 
 ## Configuration
 
-Backend `server/.env`:
-
-- `PORT=4000`
-- `CLIENT_ORIGIN=http://localhost:5173`
+Cloudflare Worker local config is in `server/cloudflare/wrangler.toml`. For production, set `CLIENT_ORIGIN` to the exact Cloudflare Pages URL in the Worker dashboard. The Worker rejects browser origins not explicitly listed.
 
 Frontend `client/.env` for deployment:
 
@@ -67,30 +65,31 @@ Frontend `client/.env` for deployment:
 
 Do not put server secrets in `VITE_` variables.
 
-## Deploy to Render
+## Deploy to Cloudflare
 
-The repository includes a `render.yaml` Blueprint for both services. It automatically connects the frontend's `VITE_SERVER_URL` to the backend URL and the backend's `CLIENT_ORIGIN` to the frontend URL.
+The Cloudflare API implementation and deployment guide are in [server/cloudflare](server/cloudflare/README.md). It uses Workers with SQLite-backed Durable Objects, so no always-on Node server is needed.
 
-1. Push the project to GitHub and make sure `render.yaml` is on the branch you intend to deploy.
-2. Sign in to Render, choose **New > Blueprint**, connect the GitHub repository, and select that branch.
-3. Review the two services (`watch-party-api` and `watch-party-web`) and apply the Blueprint. No secret environment values are required.
-4. Wait for both initial deploys to complete. Open the `watch-party-api` service's `/health` URL and confirm it returns `status: ok`.
-5. Open the `watch-party-web` URL and test room creation, invitation joining, synchronized playback, chat, and queue with two browsers.
+1. Deploy the Worker from `server/cloudflare` with Wrangler or the Cloudflare dashboard.
+2. Set the Worker `CLIENT_ORIGIN` variable to your Pages origin.
+3. Deploy the static `client` directory to Cloudflare Pages with build command `npm install && npm run build` and output directory `dist`.
+4. Set Pages build variable `VITE_SERVER_URL` to the deployed Worker URL and rebuild.
+5. Check the Worker `/health` endpoint, then test a room with two browsers.
 
-The server service is a persistent Node web service, so Socket.IO WebSockets work without serverless adaptation. The client is served as a static site. Render may put a free web service to sleep when idle; its first request after sleeping can take longer. In-memory rooms are lost whenever the backend restarts or sleeps, so this MVP is best for testing and small ephemeral watch parties rather than persistent rooms.
+Cloudflare Workers Free supports SQLite-backed Durable Objects and has daily usage limits. Durable Object WebSockets use hibernation and a reconnect grace period; active usage may still consume quota. Check the current Cloudflare limits before larger launches.
 
 ## Other hosting options
 
-- **Railway:** deploy `server` as a Node service (`npm install`, `npm start`) and `client` as a static build (`npm install && npm run build`, output `dist`). Set `CLIENT_ORIGIN` to the public frontend URL and `VITE_SERVER_URL` to the public backend URL.
-- **Vercel or Netlify:** suitable for the frontend static build, but keep the Express/Socket.IO backend on a persistent WebSocket-capable service such as Render or Railway. Configure the same two URLs above.
+- **Render:** the pushed `render.yaml` Blueprint deploys the legacy Express backend and static frontend. Render requires payment information for this workspace.
+- **Railway:** can host the legacy Express backend, but free usage is limited; monitor its current quota and billing requirements.
+- **Vercel or Netlify:** suitable for the static frontend, paired with the Cloudflare Worker backend.
 
-No hosting account or live environment is changed by this repository configuration.
+No live Cloudflare deployment is created automatically; authenticate Wrangler or connect the repository in the Cloudflare dashboard.
 
 ## Architecture and limits
 
-The server owns room membership, roles, playback state, chat broadcast, and the shared queue. The YouTube IFrame API renders playback in the client; authorized playback events update server state, which is broadcast to room members. Participants cannot control playback by manually emitting client events.
+The Worker owns room membership, roles, playback state, chat broadcast, and the shared queue in one Durable Object per room. The YouTube IFrame API renders playback in the client; authorized playback events update server state, which is broadcast to room members. Participants cannot control playback by manually emitting client events.
 
-Room, queue, and recent chat state live in server memory and are cleared when the backend restarts. Recent room/video history lives in the current browser only. Socket IDs identify participants, so there is no account authentication or reconnect identity restoration. Room codes are invitations, not authentication. Video titles are not fetched from the YouTube Data API; the queue shows a video ID and thumbnail. Chat rate limits are per active socket and are not a substitute for production abuse controls. Private rooms/passwords and database persistence are not implemented.
+Cloudflare room, queue, and recent chat state persist in Durable Object SQLite. Reconnecting room sessions are token-bound and retained briefly during network interruptions. Recent room/video history remains browser-local. There is no account authentication; room codes are invitations, not authentication. Video titles are not fetched from YouTube Data API; the queue shows a video ID and thumbnail. Chat rate limits are per room session and are not a substitute for production abuse controls. Private rooms/passwords are not implemented. The legacy Express backend still uses in-memory room state and socket-ID membership.
 
 ## Manual multi-user checklist
 

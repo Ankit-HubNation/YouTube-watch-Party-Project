@@ -2,6 +2,9 @@
   "name": "youtube-watch-party",
   "private": true,
   "version": "1.0.0",
-  "scripts": {"dev": "concurrently -n server,client -c blue,green \"npm run dev --prefix server\" \"npm run dev --prefix client\""},
+  "scripts": {
+    "dev": "concurrently -n api,client -c blue,green \"npm run dev --prefix server/cloudflare\" \"npm run dev --prefix client\"",
+    "dev:legacy": "concurrently -n server,client -c blue,green \"npm run dev --prefix server\" \"npm run dev --prefix client\""
+  },
   "devDependencies": {"concurrently": "^9.1.2"}
 }

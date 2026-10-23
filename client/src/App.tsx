@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { RealtimeSocket } from './realtime';
 import { ArrowRight, Check, Copy, Crown, Link2, LogOut, MessageCircle, Play, Shield, Users, Youtube } from 'lucide-react';
 
 type Role = 'host' | 'moderator' | 'participant';
@@ -10,7 +10,7 @@ type Room = { roomId: string; name: string; videoId: string; playState: 'playing
 type RecentRoom = { roomId: string; name: string; visitedAt: number };
 type RecentVideo = { videoId: string; watchedAt: number };
 type Sync = { videoId: string; playState: 'playing' | 'paused'; currentTime: number; action?: string; actorId?: string; updatedAt?: number };
-const SERVER = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
+const SERVER = import.meta.env.VITE_SERVER_URL || 'http://localhost:8787';
 
 function readLocalHistory<T extends { [key: string]: unknown }>(key: string, isValid: (item: T) => boolean): T[] {
   try {
@@ -23,7 +23,7 @@ function writeLocalHistory<T>(key: string, value: T[]): void {
 }
 
 export default function App() {
-  const socketRef = useRef<Socket | null>(null);
+  const socketRef = useRef<RealtimeSocket | null>(null);
   const playerRef = useRef<any>(null);
   const lastObservedTimeRef = useRef<number | null>(null);
   const suppressSeekUntilRef = useRef<number>(0);
@@ -51,8 +51,9 @@ export default function App() {
   const socket = socketRef.current;
 
   useEffect(() => {
-    const s = io(SERVER, { transports: ['websocket', 'polling'] }); socketRef.current = s;
+    const s = new RealtimeSocket(SERVER); socketRef.current = s;
     s.on('connect', () => setConnected(true)); s.on('disconnect', () => setConnected(false));
+    s.on('connect_error', ({ message }: { message: string }) => setNotice(message));
     s.on('room_updated', (r: Room) => { setRoom(r); roomRef.current = r; });
     s.on('user_joined', (r: Room) => { setRoom(r); roomRef.current = r; setNotice('A participant joined the room.'); });
     s.on('user_left', (r: Room) => { setRoom(r); roomRef.current = r; setNotice('A participant left the room.'); });

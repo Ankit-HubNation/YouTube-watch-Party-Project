@@ -1,0 +1,12 @@
+name = "watch-party-api"
+main = "src/index.js"
+compatibility_date = "2026-10-17"
+compatibility_flags = ["nodejs_compat"]
+
+[[durable_objects.bindings]]
+name = "WATCH_ROOMS"
+class_name = "WatchRoom"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["WatchRoom"]

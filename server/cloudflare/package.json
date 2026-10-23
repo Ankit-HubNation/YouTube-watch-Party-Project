@@ -1,0 +1,15 @@
+{
+  "name": "watch-party-cloudflare",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --ip 0.0.0.0 --port 8787",
+    "deploy": "wrangler deploy",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.4.7",
+    "vitest": "^4.1.0",
+    "wrangler": "^4.40.0"
+  }
+}
