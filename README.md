@@ -67,13 +67,24 @@ Frontend `client/.env` for deployment:
 
 Do not put server secrets in `VITE_` variables.
 
-## Deployment
+## Deploy to Render
 
-Deploy the backend as a Node web service with `server` as its root directory, install command `npm install`, and start command `npm start`. Set `CLIENT_ORIGIN` to the exact deployed frontend origin and configure HTTPS/WebSocket support in the host.
+The repository includes a `render.yaml` Blueprint for both services. It automatically connects the frontend's `VITE_SERVER_URL` to the backend URL and the backend's `CLIENT_ORIGIN` to the frontend URL.
 
-Deploy the frontend as a static site with `client` as its root directory, build command `npm install && npm run build`, and publish directory `dist`. Set `VITE_SERVER_URL` to the deployed backend URL and rebuild. Verify `/health` and test a room with at least two browsers.
+1. Push the project to GitHub and make sure `render.yaml` is on the branch you intend to deploy.
+2. Sign in to Render, choose **New > Blueprint**, connect the GitHub repository, and select that branch.
+3. Review the two services (`watch-party-api` and `watch-party-web`) and apply the Blueprint. No secret environment values are required.
+4. Wait for both initial deploys to complete. Open the `watch-party-api` service's `/health` URL and confirm it returns `status: ok`.
+5. Open the `watch-party-web` URL and test room creation, invitation joining, synchronized playback, chat, and queue with two browsers.
 
-No live environment is changed by this project setup.
+The server service is a persistent Node web service, so Socket.IO WebSockets work without serverless adaptation. The client is served as a static site. Render may put a free web service to sleep when idle; its first request after sleeping can take longer. In-memory rooms are lost whenever the backend restarts or sleeps, so this MVP is best for testing and small ephemeral watch parties rather than persistent rooms.
+
+## Other hosting options
+
+- **Railway:** deploy `server` as a Node service (`npm install`, `npm start`) and `client` as a static build (`npm install && npm run build`, output `dist`). Set `CLIENT_ORIGIN` to the public frontend URL and `VITE_SERVER_URL` to the public backend URL.
+- **Vercel or Netlify:** suitable for the frontend static build, but keep the Express/Socket.IO backend on a persistent WebSocket-capable service such as Render or Railway. Configure the same two URLs above.
+
+No hosting account or live environment is changed by this repository configuration.
 
 ## Architecture and limits
 
