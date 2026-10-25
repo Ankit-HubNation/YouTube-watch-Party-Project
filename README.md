@@ -39,6 +39,7 @@ On Windows PowerShell:
 npm run dev
 ```
 
+Full Working Website: https://watch-party-api.watch-party-cloudflare.workers.dev/
 Frontend: http://localhost:5173  
 Worker health: http://localhost:8787/health
 
